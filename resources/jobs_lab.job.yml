@@ -1,0 +1,92 @@
+resources:
+  jobs:
+    jobs_lab:
+      name: jobs_lab_bundle
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: Europe/London
+        pause_status: UNPAUSED
+      health:
+        rules:
+          - metric: RUN_DURATION_SECONDS
+            op: GREATER_THAN
+            value: 600
+      tasks:
+        - task_key: ingest
+          disabled: false
+          email_notifications: {}
+          notebook_task:
+            base_parameters:
+              row: "3"
+            notebook_path: ../src/jobs_lab.ipynb
+            source: WORKSPACE
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: check
+          depends_on:
+            - task_key: ingest
+          condition_task:
+            left: "{{tasks.ingest.values.new_rows}}"
+            op: EQUAL_TO
+            right: "3"
+          disabled: false
+          email_notifications: {}
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: transform
+          depends_on:
+            - outcome: "true"
+              task_key: check
+          disable_auto_optimization: false
+          disabled: false
+          email_notifications: {}
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          notebook_task:
+            base_parameters:
+              fail: no
+              msg: ${var.transform_msg}
+            notebook_path: ../src/jobs_lab_step.ipynb
+            source: WORKSPACE
+          retry_on_timeout: false
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: notify_empty
+          depends_on:
+            - outcome: "false"
+              task_key: check
+          disabled: false
+          email_notifications: {}
+          notebook_task:
+            base_parameters:
+              msg: no new data today
+            notebook_path: ../src/jobs_lab_step.ipynb
+            source: WORKSPACE
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: cleanup
+          depends_on:
+            - task_key: notify_empty
+            - task_key: transform
+          disabled: false
+          email_notifications: {}
+          notebook_task:
+            base_parameters:
+              msg: cleaning up
+            notebook_path: ../src/jobs_lab_step.ipynb
+            source: WORKSPACE
+          run_if: ALL_DONE
+          timeout_seconds: 0
+          webhook_notifications: {}
+      email_notifications:
+        no_alert_for_skipped_runs: false
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}

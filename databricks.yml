@@ -1,0 +1,30 @@
+bundle:
+  name: jobs_lab_bundle
+
+include:
+  - resources/*.yml
+
+workspace:
+  profile: free
+
+variables:
+  transform_msg:
+    description: Message the transform task prints
+    default: "transforming rows (default)"
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      user_name: wattley83@gmail.com # real life: a service principal
+    permissions:
+      - user_name: wattley83@gmail.com
+        level: CAN_MANAGE
+    variables:
+      transform_msg: "transforming rows (PROD)"
