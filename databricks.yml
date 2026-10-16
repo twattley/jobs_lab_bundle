@@ -27,4 +27,4 @@ targets:
       - user_name: wattley83@gmail.com
         level: CAN_MANAGE
     variables:
-      transform_msg: "transforming rows (PROD)"
+      transform_msg: "transforming rows (PROD V2)"
